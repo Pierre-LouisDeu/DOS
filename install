@@ -1,0 +1,60 @@
+#!/bin/sh
+
+banner() 
+{
+	printf "\n"
+	printf "\e[1;77m           ██████╗    ██████╗   ███████╗    \e[0m\n"
+	printf "\e[1;77m           ██╔══██╗  ██╔═══██╗  ██╔════╝    \e[0m\n"
+	printf "\e[1;77m           ██║  ██║  ██║   ██║  ███████╗    \e[0m\n"
+	printf "\e[1;77m           ██║  ██║  ██║   ██║  ╚════██║    \e[0m\n"
+	printf "\e[1;77m           ██████╔╝  ╚██████╔╝  ███████║    \e[0m\n"
+	printf "\e[1;77m           ╚═════╝    ╚═════╝   ╚══════╝    v1.0\e[0m\n"
+	printf "\n"
+	printf "\e[1;93m  .:.:.\e[0m\e[1;77m Outil d'attaque par deni de service \e[0m\e[1;93m.:.:.\e[0m\n\n\n"
+}
+
+install()
+{
+	printf "\e${blanc}[${orange}*${blanc}] ${orange}Mises à jour [1/3] ${blanc}\n\n"
+	sudo apt update
+
+	printf "\n\n\e${blanc}[${orange}*${blanc}] ${orange}Installation de hping3 [2/3] ${gris}\n\n"
+	sudo apt-get install hping3
+
+	printf "\n\n\e${blanc}[${orange}*${blanc}] ${orange}Finalisation [3/3] ${blanc}\n"
+	pwd=$PWD
+	cd /usr/local/bin/
+	sudo mkdir DOS 
+	sudo cp $pwd/dos /usr/local/bin/DOS
+	sudo cp $pwd/var /usr/local/bin/DOS
+	sudo echo "1">/usr/local/bin/DOS/var
+	sleep 3
+	clear
+}
+
+
+step1()
+{
+	printf "\e${blanc}[${orange}*${blanc}] Le programme est maintenant accessible depuis le terminal en tapant '${orange}sudo bash dos${blanc}' \n"
+	read -p $'\e[1;37m[\e[0;33m*\e[1;37m] Entrer "d" pour lancer le programme ou un caractère aléatoire pour quitter : ' option 
+	case $option in 
+		d) 
+		sleep 1
+		sudo bash dos;;
+
+		*)
+		sleep 1
+		clear
+		exit 1;;
+			
+	esac
+}
+
+blanc='\e[1;37m'
+gris='\e[0;37m'
+orange='\e[0;33m'
+
+banner
+install
+banner
+step1

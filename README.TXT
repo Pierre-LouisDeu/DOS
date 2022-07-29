@@ -5,8 +5,7 @@
            ██║  ██║  ██║   ██║  ╚════██║  
            ██████╔╝  ╚██████╔╝  ███████║ 
            ╚═════╝    ╚═════╝   ╚══════╝    v1.0  
-
-	Outil d'attaque par deni de service        
+	   
 
 
 Téléchargement : 
